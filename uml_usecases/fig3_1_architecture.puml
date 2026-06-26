@@ -1,0 +1,67 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam componentFontSize 18
+skinparam packageFontSize 18
+skinparam databaseFontSize 18
+skinparam componentBackgroundColor White
+skinparam packageBackgroundColor White
+skinparam databaseBackgroundColor White
+skinparam packageStyle rectangle
+skinparam arrowColor Black
+
+package "前端 (Vue + ECharts)" {
+  [代码编辑器]
+  [生成与执行]
+  [迭代优化]
+  [历史与对比]
+}
+
+package "后端 (Flask)" {
+  [REST 接口]
+  [SSE 流式接口]
+  [AST 解析器]
+  [Prompt 构建器]
+  [LLM 客户端]
+  [执行器]
+  [迭代控制器]
+  [代码审查]
+}
+
+cloud "外部 LLM 服务" {
+  [DeepSeek]
+  [GPT]
+  [Claude]
+  [Gemini]
+  [通义千问]
+}
+
+database "SQLite\nhistory.db" as DB
+
+[代码编辑器] --> [REST 接口]
+[生成与执行] --> [REST 接口]
+[迭代优化] --> [SSE 流式接口]
+[历史与对比] --> [REST 接口]
+
+[REST 接口] --> [AST 解析器]
+[REST 接口] --> [Prompt 构建器]
+[REST 接口] --> [LLM 客户端]
+[REST 接口] --> [执行器]
+[REST 接口] --> DB
+
+[SSE 流式接口] --> [迭代控制器]
+[迭代控制器] --> [LLM 客户端]
+[迭代控制器] --> [执行器]
+[迭代控制器] --> [代码审查]
+[迭代控制器] --> DB
+
+[LLM 客户端] --> [DeepSeek]
+[LLM 客户端] --> [GPT]
+[LLM 客户端] --> [Claude]
+[LLM 客户端] --> [Gemini]
+[LLM 客户端] --> [通义千问]
+@enduml

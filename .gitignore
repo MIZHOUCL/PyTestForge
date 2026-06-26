@@ -1,0 +1,40 @@
+# macOS and editor noise
+.DS_Store
+Thumbs.db
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.bak
+coverage.json
+report.json
+
+# Personal/exported documents
+*.doc
+*.docx
+*.pdf
+*.pages
+~$*
+
+# Logs
+*.log

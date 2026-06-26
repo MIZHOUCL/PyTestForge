@@ -1,0 +1,33 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam arrowColor Black
+hide circle
+
+class ASTParser {
+  + parse(code): CodeAnalysisResult
+}
+class CodeAnalysisResult {
+  + functions: List<FunctionInfo>
+  + classes: List<str>
+  + summary: str
+}
+class FunctionInfo {
+  + name: str
+  + args: List
+  + complexity: int
+  + has_conditions: bool
+  + has_loops: bool
+  + has_exceptions: bool
+}
+ASTParser --> CodeAnalysisResult
+CodeAnalysisResult --> FunctionInfo
+@enduml

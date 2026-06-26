@@ -1,0 +1,29 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":R̲e̲v̲i̲e̲w̲e̲r̲" as REV
+participant ":R̲u̲l̲e̲s̲" as RUL
+
+USER -> FE: 查看审查报告
+FE -> REV: analyze(code, result)
+activate REV
+REV -> RUL: 检查规则
+activate RUL
+RUL --> REV: 返回问题列表
+deactivate RUL
+REV --> FE: 返回审查建议
+deactivate REV
+FE --> USER: 显示建议清单
+@enduml

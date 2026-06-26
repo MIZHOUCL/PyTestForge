@@ -1,0 +1,34 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":F̲l̲a̲s̲k̲A̲P̲I̲" as API
+participant ":L̲L̲M̲C̲l̲i̲e̲n̲t̲" as LLM
+participant ":R̲e̲m̲o̲t̲e̲L̲L̲M̲" as REMOTE
+
+USER -> FE: 点击生成
+FE -> API: POST /api/generate
+activate API
+API -> LLM: generate(prompt)
+activate LLM
+LLM -> REMOTE: chat.completions
+activate REMOTE
+REMOTE --> LLM: 返回响应
+deactivate REMOTE
+LLM --> API: 返回测试代码
+deactivate LLM
+API --> FE: 返回结果
+deactivate API
+FE --> USER: 显示测试代码
+@enduml

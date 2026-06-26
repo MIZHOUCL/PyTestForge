@@ -1,0 +1,28 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":P̲r̲o̲m̲p̲t̲B̲u̲i̲l̲d̲e̲r̲" as PB
+participant ":S̲t̲r̲a̲t̲e̲g̲y̲" as STR
+
+USER -> FE: 选择策略
+FE -> PB: build(strategy, code)
+activate PB
+PB -> STR: 构造 Prompt
+activate STR
+STR --> PB: 返回 system+user
+deactivate STR
+PB --> FE: 返回 Prompt 对象
+deactivate PB
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":B̲u̲g̲D̲i̲a̲g̲n̲o̲s̲e̲r̲" as BUG
+participant ":A̲S̲T̲P̲a̲r̲s̲e̲r̲" as AST
+
+USER -> FE: 查看失败原因
+FE -> BUG: diagnose(code, failures)
+activate BUG
+BUG -> AST: 定位失败函数
+activate AST
+AST --> BUG: 返回代码片段
+deactivate AST
+BUG --> FE: 返回诊断结果
+deactivate BUG
+FE --> USER: 显示根因分析
+@enduml

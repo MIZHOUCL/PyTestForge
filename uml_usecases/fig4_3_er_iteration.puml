@@ -1,0 +1,48 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 16
+skinparam rectangleFontSize 18
+skinparam usecaseFontSize 14
+skinparam usecaseBorderColor Black
+skinparam usecaseBackgroundColor White
+skinparam rectangleBorderColor Black
+skinparam rectangleBackgroundColor White
+skinparam arrowColor Black
+
+
+rectangle "iteration_history 表" as IH
+
+usecase "id\n(主键)" as B1
+usecase "created_at\n创建时间" as B2
+usecase "source_code\n被测代码" as B3
+usecase "model_name\n模型名称" as B4
+usecase "strategy\n策略类型" as B5
+usecase "iteration_count\n迭代轮数" as B6
+usecase "final_status\n最终状态" as B7
+usecase "final_pass_rate\n通过率" as B8
+usecase "final_line_coverage\n行覆盖率" as B9
+usecase "final_branch_coverage\n分支覆盖率" as B10
+usecase "coverage_thresholds\n(JSON 阈值)" as B11
+usecase "rounds_detail\n(JSON)" as B12
+usecase "code_review\n(JSON)" as B13
+usecase "total_tokens\nToken 总量" as B14
+
+B1 -up- IH
+B2 -up- IH
+B3 -up- IH
+B4 -left- IH
+B5 -left- IH
+B6 -left- IH
+B7 -right- IH
+B8 -right- IH
+B9 -right- IH
+B10 -down- IH
+B11 -down- IH
+B12 -down- IH
+B13 -down- IH
+B14 -down- IH
+@enduml

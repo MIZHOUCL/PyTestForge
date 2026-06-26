@@ -1,0 +1,29 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":F̲l̲a̲s̲k̲A̲P̲I̲" as API
+participant ":A̲S̲T̲P̲a̲r̲s̲e̲r̲" as AST
+
+USER -> FE: 输入源代码
+FE -> API: POST /api/analyze
+activate API
+API -> AST: parse(code)
+activate AST
+AST --> API: 返回分析结果
+deactivate AST
+API --> FE: 返回 JSON
+deactivate API
+FE --> USER: 显示分析摘要
+@enduml

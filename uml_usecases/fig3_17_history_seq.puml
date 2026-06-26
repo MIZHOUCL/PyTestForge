@@ -1,0 +1,39 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":F̲l̲a̲s̲k̲A̲P̲I̲" as API
+database ":S̲Q̲L̲i̲t̲e̲" as DB
+
+USER -> FE: 打开历史页
+FE -> API: GET /api/history
+activate API
+API -> DB: 查询记录
+activate DB
+DB --> API: 返回记录列表
+deactivate DB
+API --> FE: 返回分页数据
+deactivate API
+FE --> USER: 显示历史列表
+USER -> FE: 点击对比分析
+FE -> API: GET /api/stats
+activate API
+API -> DB: 聚合统计
+activate DB
+DB --> API: 返回结果
+deactivate DB
+API --> FE: 返回数据
+deactivate API
+FE --> USER: 显示图表
+@enduml

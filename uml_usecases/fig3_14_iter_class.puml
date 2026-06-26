@@ -1,0 +1,27 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam arrowColor Black
+hide circle
+
+class IterationRunner {
+  + run(code, model, strategy): Generator
+}
+class RepairPromptBuilder {
+  + build(code, prev_test, result): Prompt
+}
+class CoverageEvaluator {
+  + meets_threshold(result, thresholds): bool
+  + summarize(result): str
+}
+IterationRunner --> RepairPromptBuilder
+IterationRunner --> CoverageEvaluator
+@enduml

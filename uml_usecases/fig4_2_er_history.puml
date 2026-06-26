@@ -1,0 +1,50 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 16
+skinparam rectangleFontSize 18
+skinparam usecaseFontSize 14
+skinparam usecaseBorderColor Black
+skinparam usecaseBackgroundColor White
+skinparam rectangleBorderColor Black
+skinparam rectangleBackgroundColor White
+skinparam arrowColor Black
+
+
+rectangle "history 表" as H
+
+usecase "id\n(主键)" as A1
+usecase "created_at\n创建时间" as A2
+usecase "source_code\n被测代码" as A3
+usecase "model_id\n模型标识" as A4
+usecase "model_name\n模型名称" as A5
+usecase "strategy\n策略类型" as A6
+usecase "test_code\n生成测试" as A7
+usecase "pass_rate\n通过率" as A8
+usecase "line_coverage\n行覆盖率" as A9
+usecase "branch_coverage\n分支覆盖率" as A10
+usecase "tokens_used\nToken 用量" as A11
+usecase "latency_ms\n响应延迟" as A12
+usecase "details\n(JSON)" as A13
+
+' 上方
+A1 -up- H
+A2 -up- H
+A3 -up- H
+' 左侧
+A4 -left- H
+A5 -left- H
+A6 -left- H
+' 右侧
+A7 -right- H
+A8 -right- H
+A9 -right- H
+' 下方
+A10 -down- H
+A11 -down- H
+A12 -down- H
+A13 -down- H
+@enduml

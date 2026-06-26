@@ -1,0 +1,31 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam arrowColor Black
+hide circle
+
+class BugDiagnoser {
+  + diagnose(code, failures): DiagnosisResult
+}
+class FailureCase {
+  + test_name: str
+  + error_type: str
+  + message: str
+  + traceback: str
+}
+class DiagnosisResult {
+  + root_cause: str
+  + suspicious_lines: List<int>
+  + suggestions: List<str>
+}
+BugDiagnoser --> FailureCase
+BugDiagnoser --> DiagnosisResult
+@enduml

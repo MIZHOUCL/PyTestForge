@@ -1,0 +1,36 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam arrowColor Black
+hide circle
+
+class PromptBuilder {
+  + build(strategy, code, analysis): Prompt
+}
+class Prompt {
+  + system: str
+  + user: str
+  + strategy_desc: str
+}
+class ZeroShotStrategy {
+  + build(code): Prompt
+}
+class FewShotStrategy {
+  + build(code): Prompt
+}
+class StructuredStrategy {
+  + build(code, analysis): Prompt
+}
+PromptBuilder --> Prompt
+PromptBuilder --> ZeroShotStrategy
+PromptBuilder --> FewShotStrategy
+PromptBuilder --> StructuredStrategy
+@enduml

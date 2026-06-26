@@ -1,0 +1,34 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":R̲u̲n̲n̲e̲r̲" as RUN
+participant ":P̲y̲t̲e̲s̲t̲" as PY
+participant ":C̲o̲v̲e̲r̲a̲g̲e̲" as COV
+
+USER -> FE: 点击执行
+FE -> RUN: run(code, test)
+activate RUN
+RUN -> PY: 启动子进程
+activate PY
+PY --> RUN: 返回 JSON 报告
+deactivate PY
+RUN -> COV: 读取覆盖率
+activate COV
+COV --> RUN: 返回覆盖率数据
+deactivate COV
+RUN --> FE: 返回结果
+deactivate RUN
+FE --> USER: 显示通过率与覆盖率
+@enduml

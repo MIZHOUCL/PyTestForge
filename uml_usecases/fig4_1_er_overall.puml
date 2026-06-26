@@ -1,0 +1,49 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 16
+skinparam rectangleFontSize 18
+skinparam usecaseFontSize 14
+skinparam usecaseBorderColor Black
+skinparam usecaseBackgroundColor White
+skinparam rectangleBorderColor Black
+skinparam rectangleBackgroundColor White
+skinparam arrowColor Black
+
+
+rectangle "history 表" as H
+rectangle "iteration_history 表" as IH
+
+' history 表的属性
+usecase "id" as H1
+usecase "created_at" as H2
+usecase "model_name" as H3
+usecase "strategy" as H4
+usecase "pass_rate" as H5
+usecase "details (JSON)" as H6
+
+' iteration_history 表的属性
+usecase "id" as I1
+usecase "created_at" as I2
+usecase "iteration_count" as I3
+usecase "final_status" as I4
+usecase "rounds_detail (JSON)" as I5
+usecase "code_review (JSON)" as I6
+
+H1 -up- H
+H2 -up- H
+H3 -left- H
+H4 -left- H
+H5 -down- H
+H6 -down- H
+
+I1 -up- IH
+I2 -up- IH
+I3 -right- IH
+I4 -right- IH
+I5 -down- IH
+I6 -down- IH
+@enduml

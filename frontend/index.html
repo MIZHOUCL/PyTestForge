@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PyTestForge</title>
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;
+  --primary:#58a6ff;--primary-dim:#1f3a5f;--success:#3fb950;--success-dim:#1a3a22;
+  --warn:#d29922;--warn-dim:#3a2e0a;--danger:#f85149;--danger-dim:#3d1a1a;
+  --purple:#bc8cff;--purple-dim:#2d1f4a;
+  --text:#e6edf3;--muted:#8b949e;--radius:10px;
+}
+body{background:radial-gradient(ellipse at top,#161b22 0%,#0d1117 70%);color:var(--text);
+  font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;min-height:100vh}
+
+/* ── Navbar ── */
+.nav{height:56px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:8px;position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(8px);background:rgba(22,27,34,.85)}
+.nav-logo{font-size:15px;font-weight:700;color:var(--primary);margin-right:16px;white-space:nowrap;
+  display:flex;align-items:center;gap:6px}
+.nav-tab{padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);
+  transition:all .2s;border:1px solid transparent;font-weight:500}
+.nav-tab:hover{color:var(--text);background:var(--surface2)}
+.nav-tab.active{color:var(--primary);background:var(--primary-dim);border-color:rgba(88,166,255,.3)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.shortcut-hint{font-size:11px;color:var(--muted);background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border)}
+
+/* ── Layout ── */
+.main{max-width:1440px;margin:0 auto;padding:20px 16px;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cols{display:grid;grid-template-columns:440px 1fr;gap:16px;align-items:start}
+
+/* ── Card ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;
+  transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:rgba(88,166,255,.2);box-shadow:0 0 20px rgba(88,166,255,.03)}
+.card+.card{margin-top:12px}
+.card-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* ── Form ── */
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+select,input[type=range],input[type=text],input[type=password],input[type=number]{width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s}
+select,input[type=text],input[type=password],input[type=number]{padding:8px 10px}
+select:focus,input[type=text]:focus,input[type=password]:focus,input[type=number]:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(88,166,255,.1)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.form-item{margin-bottom:12px}
+.check-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--text);cursor:pointer}
+.check-row input{width:auto;accent-color:var(--primary)}
+.api-panel{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px}
+.api-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px}
+
+/* ── Strategy pills ── */
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;
+  border:1px solid var(--border);color:var(--muted);background:var(--surface2);transition:all .15s}
+.pill:hover{border-color:var(--primary);color:var(--primary)}
+.pill.active{background:var(--primary-dim);border-color:var(--primary);color:var(--primary)}
+
+/* ── Code editor with line numbers ── */
+.code-ed-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--border);border-radius:8px;overflow-y:auto;overflow-x:hidden;
+  background:#0d1117;transition:border-color .2s;max-height:60vh;min-height:240px}
+.code-ed-wrap:focus-within{border-color:var(--primary)}
+.line-nums{padding:12px 0;min-width:36px;text-align:right;padding-right:8px;
+  font-family:'JetBrains Mono',Consolas,monospace;font-size:12px;line-height:1.7;
+  color:var(--border);user-select:none;background:rgba(13,17,23,.5);flex-shrink:0}
+.code-ed{flex:1;min-height:220px;background:transparent;border:none;
+  padding:12px;font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:12.5px;line-height:1.7;color:#e6edf3;resize:none;outline:none;tab-size:4;
+  overflow:hidden;display:block;box-sizing:border-box}
+.code-out{background:#0d1117;border:1px solid var(--border);border-radius:8px;
+  padding:12px;font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:12px;line-height:1.7;color:#e6edf3;
+  white-space:pre-wrap;word-break:break-all;max-height:320px;overflow:auto}
+
+/* ── Threshold slider ── */
+.slider-wrap{display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;height:4px;border-radius:2px;border:none;accent-color:var(--primary);cursor:pointer}
+.slider-val{font-size:14px;font-weight:700;color:var(--primary);min-width:36px;text-align:right}
+.threshold-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.threshold-item{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px}
+.threshold-item label{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.threshold-item .slider-val{font-size:12px;min-width:34px}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:9px 18px;border-radius:7px;font-size:13px;font-weight:500;
+  cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#58a6ff,#388bfd);color:#fff;box-shadow:0 2px 8px rgba(88,166,255,.2)}
+.btn-primary:hover{background:linear-gradient(135deg,#79b8ff,#58a6ff);box-shadow:0 4px 12px rgba(88,166,255,.3);transform:translateY(-1px)}
+.btn-success{background:var(--success);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+
+/* ── Spinner ── */
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-sm{width:10px;height:10px}
+
+/* ── Skeleton loading ── */
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-line{height:14px;margin-bottom:10px;border-radius:4px}
+.skeleton-line:nth-child(2){width:80%}
+.skeleton-line:nth-child(3){width:60%}
+.skeleton-block{height:120px;margin-bottom:12px}
+
+/* ── Error Panel ── */
+.error-panel{background:var(--danger-dim);border:1px solid rgba(248,81,73,.4);border-radius:10px;
+  padding:16px;margin-bottom:14px;animation:slideIn .3s ease}
+.error-panel-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.error-panel-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:16px;background:rgba(248,81,73,.15);flex-shrink:0}
+.error-panel-title{font-size:14px;font-weight:600;color:var(--danger);flex:1}
+.error-panel-close{cursor:pointer;color:var(--muted);font-size:18px;padding:4px}
+.error-panel-close:hover{color:var(--text)}
+.error-panel-msg{font-size:13px;color:var(--text);margin-bottom:8px;line-height:1.5}
+.error-panel-suggest{font-size:12px;color:var(--muted);line-height:1.5;padding:8px 10px;
+  background:rgba(0,0,0,.2);border-radius:6px;margin-bottom:10px}
+.error-panel-actions{display:flex;gap:8px}
+
+/* ── Iteration Timeline ── */
+.timeline{position:relative;padding-left:0}
+.round-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:12px;overflow:hidden;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.round-header{display:flex;align-items:center;gap:10px;padding:12px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.round-badge{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.badge-running{background:var(--primary-dim);color:var(--primary);border:1px solid var(--primary)}
+.badge-pass{background:var(--success-dim);color:var(--success);border:1px solid var(--success)}
+.badge-fail{background:var(--danger-dim);color:var(--danger);border:1px solid var(--danger)}
+.round-label{font-size:13px;font-weight:600;flex:1}
+.round-status{font-size:12px;padding:2px 10px;border-radius:20px;font-weight:500}
+.status-running{background:var(--primary-dim);color:var(--primary)}
+.status-pass{background:var(--success-dim);color:var(--success)}
+.status-fail{background:var(--danger-dim);color:var(--danger)}
+.status-error{background:var(--warn-dim);color:var(--warn)}
+.round-body{padding:14px 16px}
+/* ── Metric bars ── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+.metric{background:var(--surface);border-radius:7px;padding:10px 12px}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:4px}
+.metric-val{font-size:18px;font-weight:700;margin-bottom:4px}
+.bar-wrap{background:var(--border);border-radius:10px;height:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:10px;transition:width .5s ease}
+.coverage-mini{font-size:11px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.review-list{display:flex;flex-direction:column;gap:8px;margin:10px 0 12px}
+.review-item{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px 12px}
+.review-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.review-title{font-size:12px;font-weight:700;color:var(--text)}
+.review-body{font-size:12px;color:var(--muted);line-height:1.55}
+.review-suggest{font-size:12px;color:var(--primary);line-height:1.55;margin-top:4px}
+
+/* ── Failure reason ── */
+.failure-box{background:var(--danger-dim);border:1px solid var(--danger);
+  border-radius:7px;padding:10px 12px;font-size:12px;color:var(--danger);
+  margin-bottom:10px;line-height:1.6}
+.warn-box{background:var(--warn-dim);border:1px solid var(--warn);
+  border-radius:7px;padding:10px 12px;font-size:12px;color:var(--warn);margin-bottom:10px}
+
+/* ── Expandable code ── */
+.expand-btn{font-size:12px;color:var(--primary);cursor:pointer;background:none;
+  border:none;padding:0;text-decoration:underline}
+
+/* ── Final result ── */
+.final-card{border-radius:10px;padding:18px;margin-bottom:14px;text-align:center}
+.final-success{background:var(--success-dim);border:1px solid var(--success)}
+.final-failed{background:var(--danger-dim);border:1px solid var(--danger)}
+.final-bug{background:rgba(239,68,68,.12);border:1px solid #ef4444}
+.sev-badge{padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600}
+.final-icon{font-size:36px;margin-bottom:8px}
+.final-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.final-sub{font-size:12px;color:var(--muted)}
+
+/* ── Test detail table ── */
+.detail-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.detail-table th{background:var(--surface);padding:6px 10px;text-align:left;
+  color:var(--muted);font-weight:500;border-bottom:1px solid var(--border)}
+.detail-table td{padding:6px 10px;border-bottom:1px solid var(--border)}
+.tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:500}
+.tag-pass{background:var(--success-dim);color:var(--success)}
+.tag-fail{background:var(--danger-dim);color:var(--danger)}
+.tag-err{background:var(--warn-dim);color:var(--warn)}
+
+/* ── History table ── */
+.htable{width:100%;border-collapse:collapse;font-size:13px}
+.htable th{background:var(--surface2);padding:9px 12px;text-align:left;
+  color:var(--muted);font-size:12px;border-bottom:1px solid var(--border)}
+.htable td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.htable tr:hover td{background:var(--surface2)}
+
+/* ── Stats ── */
+.stag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px}
+.stag-s{background:var(--success-dim);color:var(--success)}
+.stag-f{background:var(--danger-dim);color:var(--danger)}
+.stag-b{background:rgba(239,68,68,.18);color:#fca5a5}
+.stag-m{background:var(--primary-dim);color:var(--primary)}
+
+/* ── Pagination ── */
+.pages{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.page-btn{padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface2);color:var(--text)}
+.page-btn:hover,.page-btn.cur{background:var(--primary);color:#fff;border-color:var(--primary)}
+.page-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* ── Toast ── */
+.toasts{position:fixed;top:64px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999}
+.toast{padding:10px 16px;border-radius:8px;font-size:13px;color:#fff;
+  min-width:200px;animation:slideIn .2s ease;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.toast-info{background:var(--primary)}
+.toast-success{background:var(--success)}
+.toast-error{background:var(--danger)}
+
+/* ── AST box ── */
+.ast-box{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:10px;font-size:11.5px;color:var(--muted);font-family:monospace;
+  white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:8px}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:48px 0;color:var(--muted)}
+.empty .ei{font-size:40px;margin-bottom:10px}
+
+/* ── Idle panel ── */
+.idle{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:300px;color:var(--muted);gap:10px}
+.idle .big{font-size:48px}
+.idle p{font-size:13px}
+
+/* ── Mode toggle ── */
+.mode-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:3px;margin-bottom:14px}
+.mode-btn{flex:1;padding:6px;border-radius:6px;font-size:12px;font-weight:500;
+  text-align:center;cursor:pointer;color:var(--muted);transition:all .2s}
+.mode-btn.active{background:var(--primary);color:#fff}
+
+/* ── Chart wrapper ── */
+.chart-wrap{position:relative;height:260px;margin-top:10px}
+.chart-grid{display:grid;grid-template-columns:1fr;gap:10px}
+
+/* ── Footer ── */
+.footer{text-align:center;padding:24px 16px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);margin-top:32px}
+
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+@media(max-width:1100px){.main[data-tab="stats"] .cols-stats{grid-template-columns:1fr}}
+.cols-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(500px,1fr));gap:16px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Navbar -->
+<nav class="nav">
+  <span class="nav-logo">PyTestForge</span>
+  <span class="nav-tab" :class="{active:tab==='gen'}" @click="tab='gen'">生成测试用例</span>
+  <span class="nav-tab" :class="{active:tab==='hist'}" @click="switchHist">历史记录</span>
+  <span class="nav-tab" :class="{active:tab==='stats'}" @click="switchStats">对比分析</span>
+  <div class="nav-right">
+    <span class="shortcut-hint">Ctrl+Enter 运行</span>
+  </div>
+</nav>
+
+<!-- Toasts -->
+<div class="toasts">
+  <div v-for="t in toasts" :key="t.id" :class="['toast','toast-'+t.type]">{{t.msg}}</div>
+</div>
+
+<!-- TAB: 生成 -->
+<div class="main" v-show="tab==='gen'">
+  <div class="cols">
+
+    <!-- LEFT: 输入面板 -->
+    <div>
+      <div class="card">
+        <div class="card-title">⚙️ 配置</div>
+
+        <!-- 模式切换 -->
+        <div class="mode-toggle">
+          <div class="mode-btn" :class="{active:mode==='quick'}" @click="mode='quick'">⚡ 快速生成</div>
+          <div class="mode-btn" :class="{active:mode==='iter'}"  @click="mode='iter'">🔄 迭代优化</div>
+        </div>
+
+        <!-- 模型 & 策略 -->
+        <div class="form-row">
+          <div>
+            <label>选择模型</label>
+            <select v-model="form.model_id" @change="syncSelectedModel">
+              <option v-for="m in allModels" :key="m.id" :value="m.id">{{m.name}}</option>
+            </select>
+          </div>
+          <div>
+            <label>Prompt 策略</label>
+            <select v-model="form.strategy">
+              <option value="zero_shot">Zero-shot</option>
+              <option value="few_shot">Few-shot</option>
+              <option value="structured">Structured</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- API & 模型配置 -->
+        <div class="api-panel">
+          <label class="check-row">
+            <input type="checkbox" v-model="apiConfig.enabled"/>
+            <span>使用前端自定义 API / 模型</span>
+          </label>
+          <div v-if="apiConfig.enabled">
+            <div class="form-row">
+              <div>
+                <label>服务商 / 中转站</label>
+                <select v-model="apiConfig.preset" @change="applyProviderPreset">
+                  <option v-for="p in providerPresets" :key="p.name" :value="p.name">{{p.name}}</option>
+                </select>
+              </div>
+              <div>
+                <label>显示名称</label>
+                <input type="text" v-model.trim="apiConfig.name" placeholder="例如 GPT-5.4 官方"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label>Base URL</label>
+                <input type="text" v-model.trim="apiConfig.base_url" placeholder="https://api.openai.com/v1"/>
+              </div>
+              <div>
+                <label>模型 ID</label>
+                <input type="text" v-model.trim="apiConfig.model" placeholder="例如 gpt-5.4"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label>API Key</label>
+                <input type="password" v-model.trim="apiConfig.api_key" placeholder="sk-..."/>
+              </div>
+              <div>
+                <label>Max Tokens</label>
+                <input type="number" min="256" max="32768" step="256" v-model.number="apiConfig.max_tokens"/>
+              </div>
+            </div>
+            <div class="api-actions">
+              <button class="btn btn-outline btn-sm" @click="saveCustomModel">保存到模型列表</button>
+              <button class="btn btn-outline btn-sm" @click="clearApiConfig">清空配置</button>
+              <button class="btn btn-danger btn-sm" v-if="selectedCustomModel" @click="deleteCustomModel">删除当前自定义模型</button>
+            </div>
+            <div class="hint">支持 OpenAI 兼容接口：官方 API、DeepSeek、通义千问兼容模式、Gemini OpenAI 兼容地址，以及多数中转站。</div>
+          </div>
+        </div>
+
+        <!-- 覆盖率阈值 -->
+        <div class="form-item" v-if="mode==='iter'">
+          <label>覆盖率目标（全部达到则停止迭代）</label>
+          <div class="threshold-grid">
+            <div class="threshold-item" v-for="m in coverageControls" :key="m.key">
+              <label>
+                <span>{{m.label}}</span>
+                <span class="slider-val">{{form.coverage_thresholds[m.key]}}%</span>
+              </label>
+              <div class="slider-wrap">
+                <input type="range" min="0" max="100" step="5" v-model.number="form.coverage_thresholds[m.key]"/>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">最多迭代 3 轮，未达标则标记为失效</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📝 Python 代码</div>
+        <div class="code-ed-wrap">
+          <div class="line-nums" ref="lineNums">
+            <div v-for="n in lineCount" :key="n" style="height:1.7em">{{n}}</div>
+          </div>
+          <textarea class="code-ed" v-model="form.code" ref="codeEditor"
+            placeholder="# 输入你的 Python 函数，例如：
+def grade(score: int) -> str:
+    if score >= 90: return '优秀'
+    elif score >= 60: return '及格'
+    else: return '不及格'"
+            @keydown.tab.prevent="insertTab" @scroll="syncScroll" spellcheck="false"></textarea>
+        </div>
+
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;color:var(--muted);padding-top:3px">示例：</span>
+          <button class="btn btn-outline btn-sm" @click="loadEx('simple')">简单函数</button>
+          <button class="btn btn-outline btn-sm" @click="loadEx('branch')">含分支</button>
+          <button class="btn btn-outline btn-sm" @click="loadEx('exception')">含异常</button>
+          <button class="btn btn-outline btn-sm" @click="loadEx('class_ex')">类方法</button>
+          <button class="btn btn-outline btn-sm" @click="loadEx('recursive')">递归</button>
+          <button class="btn btn-outline btn-sm" @click="loadEx('data')">数据处理</button>
+          <select class="form-control" style="height:28px;font-size:12px;padding:2px 6px;min-width:200px"
+                  v-model="selectedExampleId" @change="loadExampleFromLibrary">
+            <option value="">📚 示例库（{{exampleLibrary.length}} 个）…</option>
+            <optgroup label="基础函数（数学 / 字符串）">
+              <option v-for="ex in exampleLibrary.filter(e=>e.category==='basic')" :key="ex.id" :value="ex.id">{{ex.title}}</option>
+            </optgroup>
+            <optgroup label="分支密集（覆盖分支测试）">
+              <option v-for="ex in exampleLibrary.filter(e=>e.category==='branch')" :key="ex.id" :value="ex.id">{{ex.title}}</option>
+            </optgroup>
+            <optgroup label="异常处理（覆盖异常路径）">
+              <option v-for="ex in exampleLibrary.filter(e=>e.category==='exception')" :key="ex.id" :value="ex.id">{{ex.title}}</option>
+            </optgroup>
+            <optgroup label="类与状态（OOP）">
+              <option v-for="ex in exampleLibrary.filter(e=>e.category==='oop')" :key="ex.id" :value="ex.id">{{ex.title}}</option>
+            </optgroup>
+            <optgroup label="🐞 故意带 Bug（演示诊断器）">
+              <option v-for="ex in exampleLibrary.filter(e=>e.category==='buggy')" :key="ex.id" :value="ex.id">{{ex.title}}</option>
+            </optgroup>
+          </select>
+          <button class="btn btn-outline btn-sm" @click="doAnalyze">🔍 解析结构</button>
+        </div>
+
+        <div class="ast-box" v-if="astSummary">{{astSummary}}</div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" :disabled="running" @click="doRun">
+            <span v-if="running" class="spin"></span>
+            <span v-else>{{mode==='iter'?'🔄':'⚡'}}</span>
+            {{running ? '运行中...' : (mode==='iter' ? '迭代优化生成' : '生成并执行')}}
+          </button>
+          <span class="shortcut-hint" style="font-size:11px">Ctrl+Enter</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: 结果面板 -->
+    <div>
+
+      <!-- 错误面板 -->
+      <div class="error-panel" v-if="errorInfo">
+        <div class="error-panel-header">
+          <div class="error-panel-icon">{{errorIcon(errorInfo.error_type)}}</div>
+          <div class="error-panel-title">{{errorTitle(errorInfo.error_type)}}</div>
+          <span class="error-panel-close" @click="errorInfo=null">&times;</span>
+        </div>
+        <div class="error-panel-msg">{{errorInfo.message}}</div>
+        <div class="error-panel-suggest" v-if="errorInfo.suggestion">💡 {{errorInfo.suggestion}}</div>
+        <div class="error-panel-actions">
+          <button class="btn btn-outline btn-sm" v-if="errorInfo.retryable" @click="errorInfo=null;doRun()">🔄 重试</button>
+          <button class="btn btn-outline btn-sm" @click="errorInfo=null">关闭</button>
+        </div>
+      </div>
+
+      <!-- 加载骨架屏 -->
+      <div v-if="running && !rounds.length && !quickResult" class="card">
+        <div class="skeleton skeleton-block"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line"></div>
+      </div>
+
+      <!-- 迭代模式结果 -->
+      <template v-if="mode==='iter'">
+
+        <div v-if="finalStatus" :class="['final-card', finalStatus==='success'?'final-success':(finalStatus==='source_bug'?'final-bug':'final-failed')]">
+          <div class="final-icon">{{finalStatus==='success'?'✅':(finalStatus==='source_bug'?'🐞':'❌')}}</div>
+          <div class="final-title">
+            {{finalStatus==='success'?'迭代优化成功':(finalStatus==='source_bug'?'被测代码可能存在 Bug':'迭代失效')}}
+          </div>
+          <div class="final-sub" v-if="finalStatus==='success'">
+            第 {{rounds.length}} 轮达标 · {{coverageSummary(rounds[rounds.length-1])}} · 通过率 100%
+          </div>
+          <div class="final-sub" v-else-if="finalStatus==='source_bug'">
+            诊断置信度 {{Math.round((sourceBugDiagnosis?.confidence||0)*100)}}% · 已自动停止迭代以避免"为 bug 生成测试"
+          </div>
+          <div class="final-sub" v-else>已迭代 {{rounds.length}} 轮，未能达到目标覆盖率，已记录到历史</div>
+        </div>
+
+        <!-- ── 被测代码 Bug 诊断卡片（独立大卡片） ── -->
+        <div class="card" v-if="sourceBugDiagnosis && sourceBugDiagnosis.verdict==='source_bug'" style="margin-bottom:14px;border:1px solid #ef4444;background:rgba(239,68,68,.06)">
+          <div class="card-title" style="color:#ef4444">🐞 被测代码 Bug 诊断</div>
+          <div style="font-size:12px;color:var(--muted);margin:6px 0 10px">
+            置信度 <b style="color:#fff">{{Math.round((sourceBugDiagnosis.confidence||0)*100)}}%</b>
+            <span v-if="sourceBugDiagnosis.reasoning"> · {{sourceBugDiagnosis.reasoning}}</span>
+          </div>
+          <div v-for="(issue,i) in sourceBugDiagnosis.source_issues" :key="i" class="rev-item" style="border-left:3px solid #ef4444">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+              <span class="sev-badge" :style="{background:severityBg(issue.severity),color:severityColor(issue.severity)}">
+                {{severityText(issue.severity)}}
+              </span>
+              <b>{{issue.title}}</b>
+              <span v-if="issue.line" style="color:var(--muted);font-size:11px">第 {{issue.line}} 行</span>
+            </div>
+            <div style="font-size:12.5px;color:#e6edf3;margin-bottom:4px">{{issue.description}}</div>
+            <div v-if="issue.suggested_fix" style="font-size:12px;color:#22d3ee">
+              <b>修复建议：</b><span style="white-space:pre-wrap">{{issue.suggested_fix}}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" v-if="codeReview.length" style="margin-bottom:14px">
+          <div class="card-title">🛠 被测代码问题与改进建议</div>
+          <div class="review-list">
+            <div class="review-item" v-for="(it,i) in codeReview" :key="i">
+              <div class="review-head">
+                <span class="tag" :style="{background:severityBg(it.severity),color:severityColor(it.severity)}">{{severityText(it.severity)}}</span>
+                <span class="review-title">{{it.title}}</span>
+                <span v-if="it.line" style="font-size:11px;color:var(--muted)">第 {{it.line}} 行</span>
+              </div>
+              <div class="review-body">{{it.message}}</div>
+              <div class="review-suggest">建议：{{it.suggestion}}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 迭代轮次 -->
+        <div v-if="rounds.length>0 || currentAction" class="timeline">
+          <div v-if="currentAction && !finalStatus" class="round-card" style="border-color:var(--primary)">
+            <div class="round-header">
+              <div class="round-badge badge-running"><span class="spin spin-sm"></span></div>
+              <span class="round-label">第 {{currentRound}} 轮</span>
+              <span class="round-status status-running">{{currentAction}}</span>
+            </div>
+          </div>
+
+          <div v-for="r in rounds" :key="r.round" class="round-card">
+            <div class="round-header" @click="r._open=!r._open">
+              <div class="round-badge" :class="r.status==='pass'?'badge-pass':'badge-fail'">{{r.round}}</div>
+              <span class="round-label">第 {{r.round}} 轮</span>
+              <div style="display:flex;gap:8px;align-items:center;flex:1;justify-content:flex-end">
+                <span style="font-size:12px;color:var(--muted)">通过率 {{pct(r.pass_rate)}} · {{coverageSummary(r)}}</span>
+                <span class="round-status" :class="r.status==='pass'?'status-pass':(r.status==='error'?'status-error':'status-fail')">
+                  {{r.status==='pass'?'✓ 达标':r.status==='error'?'⚠ 错误':'✗ 未达标'}}
+                </span>
+              </div>
+              <span style="color:var(--muted);margin-left:8px;font-size:12px">{{r._open?'▲':'▼'}}</span>
+            </div>
+
+            <div class="round-body" v-show="r._open!==false">
+              <div class="metrics">
+                <div class="metric">
+                  <div class="metric-label">测试通过率</div>
+                  <div class="metric-val" :style="{color:r.pass_rate>=1?'var(--success)':r.pass_rate>=.6?'var(--warn)':'var(--danger)'}">{{pct(r.pass_rate)}}</div>
+                  <div class="bar-wrap"><div class="bar-fill" :style="{width:(r.pass_rate*100)+'%',background:r.pass_rate>=1?'var(--success)':r.pass_rate>=.6?'var(--warn)':'var(--danger)'}"></div></div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:4px">{{r.passed}}/{{r.total}} 通过</div>
+                </div>
+                <div class="metric" v-for="m in coverageControls" :key="m.key">
+                  <div class="metric-label">{{m.label}}</div>
+                  <div class="metric-val" :style="{color:coverageColor(r,m.key)}">{{coverageText(r,m.key)}}</div>
+                  <div class="bar-wrap"><div class="bar-fill" :style="{width:coverageWidth(r,m.key),background:coverageColor(r,m.key)}"></div></div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:4px">{{coverageCount(r,m.key)}}<span v-if="coverageApplicable(r,m.key)"> · 目标 {{form.coverage_thresholds[m.key]}}%</span></div>
+                </div>
+              </div>
+
+              <!-- 失败原因 + 建议 -->
+              <div class="failure-box" v-if="r.failure_reason && r.status!=='pass'">
+                ⚠️ {{r.failure_reason}}
+                <div v-if="r.suggestion" style="margin-top:6px;color:var(--text);font-size:11px">💡 {{r.suggestion}}</div>
+              </div>
+
+              <!-- 本轮 Bug 诊断（折叠） -->
+              <div v-if="r.bug_diagnosis && r.bug_diagnosis.verdict && r.bug_diagnosis.verdict!=='ambiguous'"
+                   style="margin:8px 0;padding:8px 10px;border-radius:8px;background:rgba(15,23,42,.4);border:1px solid var(--border);font-size:12.5px">
+                <div @click="r._diagOpen=!r._diagOpen" style="cursor:pointer;display:flex;gap:8px;align-items:center">
+                  <span>{{r.bug_diagnosis.verdict==='source_bug'?'🐞':(r.bug_diagnosis.verdict==='test_wrong'?'🧪':'🔍')}}</span>
+                  <b>该轮失败诊断：</b>
+                  <span :style="{color:r.bug_diagnosis.verdict==='source_bug'?'#ef4444':(r.bug_diagnosis.verdict==='test_wrong'?'#22d3ee':'#a3b3c5')}">
+                    {{r.bug_diagnosis.verdict==='source_bug'?'被测代码有 bug':(r.bug_diagnosis.verdict==='test_wrong'?'测试断言错':'双方都有问题')}}
+                  </span>
+                  <span style="color:var(--muted);font-size:11px">置信度 {{Math.round((r.bug_diagnosis.confidence||0)*100)}}%</span>
+                  <span style="color:var(--muted);margin-left:auto">{{r._diagOpen?'▲':'▼'}}</span>
+                </div>
+                <div v-show="r._diagOpen" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">
+                  <div v-if="r.bug_diagnosis.reasoning" style="color:#cbd5e1;margin-bottom:6px">{{r.bug_diagnosis.reasoning}}</div>
+                  <div v-for="(issue,i) in r.bug_diagnosis.source_issues" :key="'s'+i" style="margin-bottom:4px;padding:4px 6px;background:rgba(239,68,68,.07);border-left:2px solid #ef4444;border-radius:4px">
+                    <b>{{issue.title}}</b><span v-if="issue.line" style="color:var(--muted);font-size:11px"> · 第 {{issue.line}} 行</span>
+                    <div style="font-size:12px">{{issue.description}}</div>
+                    <div v-if="issue.suggested_fix" style="font-size:11.5px;color:#22d3ee;margin-top:2px"><b>修复：</b><span style="white-space:pre-wrap">{{issue.suggested_fix}}</span></div>
+                  </div>
+                  <div v-for="(issue,i) in r.bug_diagnosis.test_issues" :key="'t'+i" style="margin-bottom:4px;padding:4px 6px;background:rgba(34,211,238,.06);border-left:2px solid #22d3ee;border-radius:4px;font-size:12px">
+                    <b>{{issue.test_name}}：</b>{{issue.description}}
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="r.missing_lines && r.missing_lines.length" style="font-size:12px;color:var(--muted);margin-bottom:8px">
+                📍 未覆盖行号：第 {{r.missing_lines.slice(0,10).join(', ')}} 行
+              </div>
+
+              <div v-if="r.details && r.details.length">
+                <div style="font-size:12px;font-weight:600;margin-bottom:6px">测试明细</div>
+                <table class="detail-table">
+                  <thead><tr><th>函数名</th><th>状态</th><th>信息</th></tr></thead>
+                  <tbody>
+                    <tr v-for="d in r.details" :key="d.name">
+                      <td style="font-family:monospace">{{d.name}}</td>
+                      <td><span class="tag" :class="d.status==='passed'?'tag-pass':d.status==='failed'?'tag-fail':'tag-err'">{{d.status==='passed'?'✓ 通过':d.status==='failed'?'✗ 失败':'⚠ 错误'}}</span></td>
+                      <td style="color:var(--danger);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" :title="d.message">{{d.message||'—'}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+                <button class="expand-btn" @click="r._codeOpen=!r._codeOpen">{{r._codeOpen?'▲ 收起':'▼ 查看测试代码'}}</button>
+              </div>
+              <div v-show="r._codeOpen" style="margin-top:8px">
+                <div class="code-out">{{r.test_code}}</div>
+                <div style="margin-top:6px;display:flex;gap:6px">
+                  <button class="btn btn-outline btn-sm" @click="copy(r.test_code)">📋 复制</button>
+                  <button class="btn btn-outline btn-sm" @click="downloadPy(r.test_code,'test_round_'+r.round+'.py')">⬇ 下载 .py</button>
+                </div>
+              </div>
+
+              <div style="font-size:11px;color:var(--muted);margin-top:10px;display:flex;gap:14px">
+                <span>🕒 延迟 {{r.latency_ms}}ms</span>
+                <span>💬 Token {{r.tokens_used}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="!running" class="idle">
+          <div class="big">🔄</div>
+          <p>设置目标覆盖率，点击「迭代优化生成」</p>
+          <p style="font-size:11px">系统最多迭代 3 轮，自动修复失败用例并补充覆盖</p>
+        </div>
+      </template>
+
+      <!-- 快速生成结果 -->
+      <template v-else>
+        <div v-if="quickResult" class="card">
+          <div class="card-title">📋 生成结果 <span class="stag stag-m">{{quickResult.model_name}}</span></div>
+          <div class="metrics">
+            <div class="metric"><div class="metric-label">总用例</div><div class="metric-val" style="color:var(--primary)">{{quickResult.run.total}}</div></div>
+            <div class="metric"><div class="metric-label">通过</div><div class="metric-val" style="color:var(--success)">{{quickResult.run.passed}}</div></div>
+            <div class="metric"><div class="metric-label">通过率</div><div class="metric-val" :style="{color:quickResult.run.pass_rate>=.8?'var(--success)':'var(--warn)'}">{{pct(quickResult.run.pass_rate)}}</div></div>
+            <div class="metric" v-for="m in coverageControls" :key="m.key">
+              <div class="metric-label">{{m.label}}</div>
+              <div class="metric-val" :style="{color:coverageColor(quickResult.run,m.key)}">{{coverageText(quickResult.run,m.key)}}</div>
+              <div class="coverage-mini"><span>{{coverageCount(quickResult.run,m.key)}}</span></div>
+            </div>
+          </div>
+          <div class="warn-box" v-if="quickResult.run.coverage_error">{{quickResult.run.coverage_error}}</div>
+          <div v-if="quickResult.code_review && quickResult.code_review.length">
+            <div class="card-title" style="margin-top:14px">🛠 被测代码问题与改进建议</div>
+            <div class="review-list">
+              <div class="review-item" v-for="(it,i) in quickResult.code_review" :key="i">
+                <div class="review-head">
+                  <span class="tag" :style="{background:severityBg(it.severity),color:severityColor(it.severity)}">{{severityText(it.severity)}}</span>
+                  <span class="review-title">{{it.title}}</span>
+                  <span v-if="it.line" style="font-size:11px;color:var(--muted)">第 {{it.line}} 行</span>
+                </div>
+                <div class="review-body">{{it.message}}</div>
+                <div class="review-suggest">建议：{{it.suggestion}}</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--muted)">测试代码</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-outline btn-sm" @click="copy(quickResult.test_code)">📋 复制</button>
+              <button class="btn btn-outline btn-sm" @click="downloadPy(quickResult.test_code,'test_generated.py')">⬇ 下载 .py</button>
+            </div>
+          </div>
+          <div class="code-out">{{quickResult.test_code}}</div>
+          <table class="detail-table" v-if="quickResult.run.details.length" style="margin-top:12px">
+            <thead><tr><th>函数名</th><th>状态</th><th>耗时</th><th>信息</th></tr></thead>
+            <tbody>
+              <tr v-for="d in quickResult.run.details" :key="d.name">
+                <td style="font-family:monospace;font-size:11px">{{d.name}}</td>
+                <td><span class="tag" :class="d.status==='passed'?'tag-pass':d.status==='failed'?'tag-fail':'tag-err'">{{d.status==='passed'?'✓':'✗'}} {{d.status}}</span></td>
+                <td style="color:var(--muted);font-size:11px">{{d.duration_ms>0?d.duration_ms.toFixed(1)+'ms':'—'}}</td>
+                <td style="font-size:11px;color:var(--danger);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" :title="d.message">{{d.message||'—'}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px;display:flex;gap:14px;flex-wrap:wrap">
+            <span>🕒 {{quickResult.latency_ms}}ms</span>
+            <span>💬 {{quickResult.tokens_used}} tokens</span>
+            <span>📌 {{quickResult.strategy_desc}}</span>
+          </div>
+        </div>
+        <div v-else-if="!running" class="idle card">
+          <div class="big">⚡</div>
+          <p>输入代码后点击「生成并执行」</p>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: 历史 -->
+<div class="main" v-show="tab==='hist'">
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">⚡ 快速生成历史
+      <div style="display:flex;gap:8px;margin-left:auto;align-items:center">
+        <select v-model="histFilter" style="width:130px" @change="loadHistory"><option value="">全部模型</option><option v-for="m in allModels" :key="m.id" :value="m.id">{{m.name}}</option></select>
+        <button class="btn btn-outline btn-sm" @click="loadHistory">🔄</button>
+      </div>
+    </div>
+    <div v-if="histData.records && histData.records.length">
+      <table class="htable">
+        <thead><tr><th>时间</th><th>模型</th><th>策略</th><th>用例</th><th>通过率</th><th>建议</th><th>操作</th></tr></thead>
+        <tbody><tr v-for="r in histData.records" :key="r.id">
+          <td style="color:var(--muted);font-size:12px">{{r.created_at}}</td>
+          <td><span class="stag stag-m">{{r.model_name}}</span></td>
+          <td style="font-size:12px;color:var(--muted)">{{r.strategy}}</td>
+          <td>{{r.total}}</td>
+          <td><span :style="{color:r.pass_rate>=.8?'var(--success)':'var(--warn)',fontWeight:600}">{{(r.pass_rate*100).toFixed(1)}}%</span></td>
+          <td><span class="stag" :class="r.review_count?'stag-f':'stag-s'">{{r.review_count||0}} 条</span></td>
+          <td><button class="btn btn-outline btn-sm" @click="viewHist(r.id,'normal')">查看</button><button class="btn btn-sm" style="background:var(--danger-dim);color:var(--danger);border:1px solid var(--danger);margin-left:6px" @click="delHist(r.id,'normal')">删除</button></td>
+        </tr></tbody>
+      </table>
+      <div class="pages"><button class="page-btn" :disabled="histPage<=1" @click="histPage--;loadHistory()">‹</button><span style="font-size:12px;color:var(--muted);padding:4px">第{{histPage}}页/共{{Math.ceil(histData.total/20)}}页</span><button class="page-btn" :disabled="histPage*20>=histData.total" @click="histPage++;loadHistory()">›</button></div>
+    </div>
+    <div class="empty" v-else><div class="ei">📭</div><div>暂无快速生成记录</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🔄 迭代优化历史<div style="margin-left:auto"><button class="btn btn-outline btn-sm" @click="loadIterHistory">🔄</button></div></div>
+    <div v-if="iterHistData.records && iterHistData.records.length">
+      <table class="htable">
+        <thead><tr><th>时间</th><th>模型</th><th>策略</th><th>轮次</th><th>状态</th><th>覆盖率</th><th>建议</th><th>操作</th></tr></thead>
+        <tbody><tr v-for="r in iterHistData.records" :key="r.id">
+          <td style="color:var(--muted);font-size:12px">{{r.created_at}}</td>
+          <td><span class="stag stag-m">{{r.model_name}}</span></td>
+          <td style="font-size:12px;color:var(--muted)">{{r.strategy}}</td>
+          <td style="text-align:center">{{r.iteration_count}} 轮</td>
+          <td><span class="stag" :class="r.final_status==='success'?'stag-s':(r.final_status==='source_bug'?'stag-b':'stag-f')">{{r.final_status==='success'?'✓ 成功':(r.final_status==='source_bug'?'🐞 源码 Bug':'✗ 失效')}}</span></td>
+          <td><div :style="{color:coverageColor(r,'code'),fontWeight:600}">代码 {{coverageText(r,'code')}}</div><div class="coverage-mini"><span>行 {{coverageText(r,'line')}}</span><span>分支 {{coverageText(r,'branch')}}</span></div></td>
+          <td><span class="stag" :class="r.review_count?'stag-f':'stag-s'">{{r.review_count||0}} 条</span></td>
+          <td><button class="btn btn-outline btn-sm" @click="viewHist(r.id,'iter')">查看</button><button class="btn btn-sm" style="background:var(--danger-dim);color:var(--danger);border:1px solid var(--danger);margin-left:6px" @click="delHist(r.id,'iter')">删除</button></td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div class="empty" v-else><div class="ei">📭</div><div>暂无迭代优化记录</div></div>
+  </div>
+</div>
+
+<!-- TAB: 对比分析 -->
+<div class="main" v-show="tab==='stats'">
+  <div class="cols-stats">
+    <div class="card">
+      <div class="card-title">⚡ 快速生成统计</div>
+      <table class="htable" v-if="statsData.length"><thead><tr><th>模型</th><th>策略</th><th>次数</th><th>通过率</th><th>耗时</th><th>Token</th></tr></thead>
+        <tbody><tr v-for="s in statsData" :key="s.model_id+s.strategy"><td><span class="stag stag-m">{{s.model_name}}</span></td><td style="font-size:12px">{{s.strategy}}</td><td>{{s.run_count}}</td><td><span :style="{color:s.avg_pass_rate>=80?'var(--success)':'var(--warn)',fontWeight:600}">{{s.avg_pass_rate}}%</span></td><td style="color:var(--muted)">{{s.avg_latency_ms}}ms</td><td style="color:var(--muted)">{{s.avg_tokens_used||0}}</td></tr></tbody>
+      </table>
+      <div class="empty" v-else><div class="ei">📉</div><div>暂无数据</div></div>
+      <div class="chart-grid" v-if="statsData.length"><div class="chart-wrap"><canvas id="chartPassRate"></canvas></div><div class="chart-wrap"><canvas id="chartQuickSpeed"></canvas></div><div class="chart-wrap"><canvas id="chartQuickTokens"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔄 迭代优化统计</div>
+      <table class="htable" v-if="iterStatsData.length"><thead><tr><th>模型</th><th>次数</th><th>成功率</th><th>轮次</th><th>覆盖率</th><th>耗时</th><th>Token</th></tr></thead>
+        <tbody><tr v-for="s in iterStatsData" :key="s.model_id+s.strategy"><td><span class="stag stag-m">{{s.model_name}}</span></td><td>{{s.run_count}}</td><td><span :style="{color:s.success_rate>=80?'var(--success)':'var(--warn)',fontWeight:600}">{{s.success_rate}}%</span></td><td>{{s.avg_iterations}} 轮</td><td><div :style="{color:s.avg_code_coverage>=70?'var(--success)':'var(--warn)',fontWeight:600}">代码 {{s.avg_code_coverage}}%</div><div class="coverage-mini"><span>行 {{s.avg_line_coverage}}%</span><span>分支 {{s.avg_branch_coverage}}%</span></div></td><td style="color:var(--muted)">{{s.avg_latency_ms||0}}ms</td><td style="color:var(--muted)">{{s.avg_tokens_used||0}}</td></tr></tbody>
+      </table>
+      <div class="empty" v-else><div class="ei">📉</div><div>暂无数据</div></div>
+      <div class="chart-grid" v-if="iterStatsData.length"><div class="chart-wrap"><canvas id="chartIterStats"></canvas></div><div class="chart-wrap"><canvas id="chartIterSpeed"></canvas></div><div class="chart-wrap"><canvas id="chartIterTokens"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div v-if="detailModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(2px)" @click.self="detailModal=null">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;width:720px;max-width:95vw;max-height:85vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <span style="font-size:15px;font-weight:600">记录详情 #{{detailModal.id}}</span>
+      <span style="cursor:pointer;color:var(--muted);font-size:20px" @click="detailModal=null">&times;</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div><label>模型</label><div style="color:var(--text)">{{detailModal.model_name}}</div></div>
+      <div><label>状态</label><div><span class="stag" :class="(detailModal.final_status||'')==='success'||(detailModal.pass_rate>=0.8)?'stag-s':'stag-f'">{{detailModal.final_status||(detailModal.pass_rate>=0.8?'良好':'需改进')}}</span></div></div>
+    </div>
+    <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center"><label>被测代码</label><button class="btn btn-outline btn-sm" @click="copy(detailModal.source_code||detailModal.code||'')">📋 复制</button></div><div class="code-out" style="max-height:140px">{{detailModal.source_code||detailModal.code}}</div></div>
+    <div v-if="detailModal.code_review&&detailModal.code_review.length" style="margin-bottom:10px"><label>代码建议</label><div class="review-list"><div class="review-item" v-for="(it,i) in detailModal.code_review" :key="i"><div class="review-head"><span class="tag" :style="{background:severityBg(it.severity),color:severityColor(it.severity)}">{{severityText(it.severity)}}</span><span class="review-title">{{it.title}}</span></div><div class="review-body">{{it.message}}</div><div class="review-suggest">建议：{{it.suggestion}}</div></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;align-items:center"><label>测试代码</label><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" @click="copy(detailModal.final_test_code||detailModal.test_code||'')">📋 复制</button><button class="btn btn-outline btn-sm" @click="downloadPy(detailModal.final_test_code||detailModal.test_code||'','test_'+detailModal.id+'.py')">⬇ 下载</button></div></div><div class="code-out" style="max-height:180px">{{detailModal.final_test_code||detailModal.test_code}}</div></div>
+  </div>
+</div>
+
+<div class="footer">PyTestForge v2.0 · LLM-powered pytest generation and coverage iteration</div>
+</div><!-- #app -->
+
+<script>
+const {createApp,ref,reactive,computed,onMounted,onUnmounted,nextTick,watch} = Vue;
+// 后端 API 地址支持通过 ?api= 覆盖，方便本地或部署环境切换。
+const API = new URLSearchParams(location.search).get('api') || "http://localhost:5050/api";
+
+// 内置示例用于快速填充编辑器，完整示例库会从后端 /api/examples 加载。
+const EXAMPLES = {
+  simple:`def add(a: int, b: int) -> int:
+    """两数相加"""
+    return a + b`,
+  branch:`def grade(score: int) -> str:
+    """根据分数返回等级"""
+    if score < 0 or score > 100:
+        raise ValueError("分数必须在 0-100 之间")
+    elif score >= 90: return "优秀"
+    elif score >= 75: return "良好"
+    elif score >= 60: return "及格"
+    else: return "不及格"`,
+  exception:`def safe_divide(a: float, b: float) -> float:
+    """安全除法"""
+    if b == 0: raise ValueError("除数不能为零")
+    return a / b`,
+  class_ex:`class Calculator:
+    """简单计算器"""
+    def __init__(self):
+        self.history = []
+
+    def add(self, a, b):
+        result = a + b
+        self.history.append(('add', a, b, result))
+        return result
+
+    def divide(self, a, b):
+        if b == 0:
+            raise ZeroDivisionError("除数不能为零")
+        result = a / b
+        self.history.append(('divide', a, b, result))
+        return result
+
+    def get_history(self):
+        return self.history.copy()`,
+  recursive:`def fibonacci(n: int) -> int:
+    """计算第n个斐波那契数"""
+    if not isinstance(n, int) or n < 0:
+        raise ValueError("n 必须是非负整数")
+    if n <= 1:
+        return n
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b`,
+  data:`def process_scores(students: list) -> dict:
+    """处理学生成绩数据"""
+    if not students:
+        return {"count": 0, "average": 0, "highest": None, "lowest": None, "passed": []}
+    scores = [s["score"] for s in students if "score" in s]
+    if not scores:
+        return {"count": 0, "average": 0, "highest": None, "lowest": None, "passed": []}
+    avg = sum(scores) / len(scores)
+    passed = [s["name"] for s in students if s.get("score", 0) >= 60]
+    return {
+        "count": len(scores),
+        "average": round(avg, 2),
+        "highest": max(scores),
+        "lowest": min(scores),
+        "passed": passed,
+    }`,
+};
+
+createApp({
+  setup() {
+    // 页面主状态：tab 控制功能页，mode 控制普通生成或迭代生成。
+    const tab = ref('gen');
+    const mode = ref('iter');
+    const toasts = ref([]);
+    const models = ref([{id:'deepseek',name:'DeepSeek'},{id:'qwen',name:'通义千问'}]);
+    // 常见 OpenAI 兼容服务预设，用户选择后自动填充 base_url。
+    const providerPresets = [
+      {name:'自定义中转站',base_url:''},
+      {name:'OpenAI 官方',base_url:'https://api.openai.com/v1'},
+      {name:'DeepSeek 官方',base_url:'https://api.deepseek.com/v1'},
+      {name:'通义千问兼容模式',base_url:'https://dashscope.aliyuncs.com/compatible-mode/v1'},
+      {name:'Gemini OpenAI 兼容',base_url:'https://generativelanguage.googleapis.com/v1beta/openai'},
+      {name:'OpenRouter',base_url:'https://openrouter.ai/api/v1'},
+      {name:'硅基流动',base_url:'https://api.siliconflow.cn/v1'},
+      {name:'月之暗面',base_url:'https://api.moonshot.cn/v1'},
+    ];
+    const storedCustomModels = (() => { try { return JSON.parse(localStorage.getItem('llm_custom_models')||'[]'); } catch(e) { return []; } })();
+    const customModels = ref(Array.isArray(storedCustomModels)?storedCustomModels:[]);
+    const apiConfig = reactive({enabled:false,id:'',preset:'自定义中转站',name:'',base_url:'',model:'',api_key:'',max_tokens:2048,temperature:0.2});
+    // 下拉框合并后端预置模型和浏览器本地保存的自定义模型。
+    const allModels = computed(()=>[...models.value,...customModels.value.map(m=>({id:m.id,name:`${m.name}（自定义）`,custom:true}))]);
+    const selectedCustomModel = computed(()=>customModels.value.find(m=>m.id===form.model_id)||null);
+    // 覆盖率控件元数据同时驱动滑块、指标文案和进度条显示。
+    const coverageControls = [
+      {key:'line',label:'行覆盖率',covered:'covered_lines',total:'total_lines',unit:'行'},
+      {key:'branch',label:'分支覆盖率',covered:'covered_branches',total:'total_branches',unit:'分支'},
+      {key:'path',label:'路径覆盖率',covered:'covered_paths',total:'total_paths',unit:'路径'},
+      {key:'code',label:'代码覆盖率',covered:'covered_lines',total:'total_lines',unit:'行'},
+    ];
+    const savedCode = localStorage.getItem('llm_draft_code');
+    const form = reactive({
+      code: savedCode || EXAMPLES.branch,
+      model_id:'deepseek', strategy:'structured',
+      coverage_thresholds:{line:70,branch:70,path:70,code:70},
+    });
+    // 运行态数据：每次生成或迭代都会刷新这些响应式变量。
+    const running = ref(false);
+    const astSummary = ref('');
+    const errorInfo = ref(null);
+    const rounds = ref([]);
+    const currentRound = ref(0);
+    const currentAction = ref('');
+    const finalStatus = ref('');
+    const sourceBugDiagnosis = ref(null);
+    const codeReview = ref([]);
+    const quickResult = ref(null);
+    const histData = ref({total:0,records:[]});
+    const iterHistData = ref({total:0,records:[]});
+    const histPage = ref(1);
+    const histFilter = ref('');
+    const detailModal = ref(null);
+    const statsData = ref([]);
+    const iterStatsData = ref([]);
+    const codeEditor = ref(null);
+    const lineNums = ref(null);
+    let chartPR=null,chartQS=null,chartQT=null,chartIS=null,chartIterSpeed=null,chartIterTokens=null;
+
+    const lineCount = computed(()=>{const lines=(form.code||'').split('\n').length;return Math.max(lines,12);});
+
+    // ── textarea 按内容自适应高度，避免 flex stretch 在长代码下留下黑底空白 ──
+    function autosizeCodeEditor(){
+      nextTick(()=>{
+        const ta=codeEditor.value;
+        if(!ta) return;
+        ta.style.height='auto';
+        // +2px 防止出现 1 行误差导致内部滚动条
+        ta.style.height=(ta.scrollHeight+2)+'px';
+      });
+    }
+    watch(()=>form.code,autosizeCodeEditor,{immediate:false});
+
+    // 自动保存草稿，避免刷新页面后丢失当前代码。
+    let saveTimer = null;
+    watch(()=>form.code,(val)=>{clearTimeout(saveTimer);saveTimer=setTimeout(()=>{localStorage.setItem('llm_draft_code',val);},500);});
+
+    // 同步代码编辑区和行号栏滚动位置。
+    function syncScroll(){if(lineNums.value&&codeEditor.value){lineNums.value.scrollTop=codeEditor.value.scrollTop;}}
+
+    function toast(msg,type='info'){const id=Date.now();toasts.value.push({id,msg,type});setTimeout(()=>{toasts.value=toasts.value.filter(t=>t.id!==id);},3200);}
+    function persistCustomModels(){localStorage.setItem('llm_custom_models',JSON.stringify(customModels.value));}
+    function applyProviderPreset(){const p=providerPresets.find(x=>x.name===apiConfig.preset);if(p&&p.base_url)apiConfig.base_url=p.base_url;}
+    function syncSelectedModel(){const c=customModels.value.find(m=>m.id===form.model_id);if(!c){apiConfig.enabled=false;return;}Object.assign(apiConfig,{enabled:true,id:c.id,preset:c.preset||'自定义中转站',name:c.name,base_url:c.base_url,model:c.model,api_key:c.api_key,max_tokens:c.max_tokens||2048,temperature:c.temperature??0.2});}
+    function clearApiConfig(){Object.assign(apiConfig,{enabled:false,id:'',preset:'自定义中转站',name:'',base_url:'',model:'',api_key:'',max_tokens:2048,temperature:0.2});if(form.model_id.startsWith('custom:'))form.model_id=models.value[0]?.id||'deepseek';}
+    function saveCustomModel(){if(!apiConfig.base_url||!apiConfig.model||!apiConfig.api_key){toast('请填写 Base URL、模型 ID 和 API Key','error');return;}const id=apiConfig.id||`custom:${Date.now()}`;const name=apiConfig.name||apiConfig.model;const item={id,name,preset:apiConfig.preset,base_url:apiConfig.base_url.replace(/\/+$/,''),model:apiConfig.model,api_key:apiConfig.api_key,max_tokens:Number(apiConfig.max_tokens||2048),temperature:Number(apiConfig.temperature??0.2)};const idx=customModels.value.findIndex(m=>m.id===id);if(idx>=0)customModels.value.splice(idx,1,item);else customModels.value.push(item);persistCustomModels();Object.assign(apiConfig,{...item,enabled:true});form.model_id=id;toast('自定义模型已保存','success');}
+    function deleteCustomModel(){const c=selectedCustomModel.value;if(!c||!confirm(`删除自定义模型「${c.name}」？`))return;customModels.value=customModels.value.filter(m=>m.id!==c.id);persistCustomModels();clearApiConfig();toast('已删除','success');}
+    function buildModelConfig(){const s=apiConfig.enabled?apiConfig:selectedCustomModel.value;if(!s)return null;return{id:s.id||`custom:${s.name||s.model||'model'}`,name:s.name||s.model,base_url:s.base_url,model:s.model,api_key:s.api_key,max_tokens:Number(s.max_tokens||2048),temperature:Number(s.temperature??0.2)};}
+    // 所有生成接口共用请求体，按需附加自定义模型配置。
+    function requestPayload(extra={}){const p={code:form.code,model_id:form.model_id,strategy:form.strategy,...extra};const mc=buildModelConfig();if(mc)p.model_config=mc;return p;}
+    function pct(v){return `${(Number(v||0)*100).toFixed(1)}%`;}
+    function coverageMeta(k){return coverageControls.find(m=>m.key===k)||coverageControls[0];}
+    // 覆盖率显示同时兼容历史记录的 final_* 字段和实时轮次字段。
+    function coverageValue(row,key){if(!row)return 0;const f=`final_${key}_coverage`,d=`${key}_coverage`;const v=row[f]!==undefined?row[f]:row[d];return Number(v||0);}
+    function coverageTotal(row,key){if(!row)return 0;return Number(row[coverageMeta(key).total]||0);}
+    function coverageApplicable(row,key){if(key==='code')return true;return coverageTotal(row,key)>0;}
+    function rowThreshold(row,key){let t=row&&row.coverage_thresholds;if(typeof t==='string'){try{t=JSON.parse(t);}catch(e){t=null;}}if(t&&t[key]!==undefined){const v=Number(t[key]);return v>1?v:v*100;}if(key==='branch'&&row&&row.coverage_threshold!==undefined){return Number(row.coverage_threshold)*100;}return Number(form.coverage_thresholds[key]||70);}
+    function coverageUnavailable(row,key){return !!(row&&row.coverage_error&&coverageTotal(row,key)===0&&coverageValue(row,key)===0);}
+    function coverageText(row,key){if(coverageUnavailable(row,key))return '未采集';if(!coverageApplicable(row,key))return '不适用';return pct(coverageValue(row,key));}
+    function coverageWidth(row,key){if(coverageUnavailable(row,key))return '0%';if(!coverageApplicable(row,key))return '100%';return `${Math.max(0,Math.min(100,coverageValue(row,key)*100))}%`;}
+    function coverageColor(row,key){if(coverageUnavailable(row,key))return 'var(--warn)';if(!coverageApplicable(row,key))return 'var(--muted)';const v=coverageValue(row,key)*100,t=rowThreshold(row,key);if(v>=t)return 'var(--success)';return v>=50?'var(--warn)':'var(--danger)';}
+    function coverageCount(row,key){const m=coverageMeta(key);if(coverageUnavailable(row,key))return '未采集';if(key==='code')return `综合 ${coverageText(row,key)}`;if(!coverageApplicable(row,key))return key==='branch'?'无分支':'无可测路径';return `${Number(row?.[m.covered]||0)}/${Number(row?.[m.total]||0)} ${m.unit}`;}
+    function coverageSummary(row){if(!row)return '代码 0.0%';return `代码 ${coverageText(row,'code')} · 行 ${coverageText(row,'line')} · 分支 ${coverageText(row,'branch')} · 路径 ${coverageText(row,'path')}`;}
+    function coveragePayload(){return Object.fromEntries(coverageControls.map(m=>[m.key,Number(form.coverage_thresholds[m.key]||0)/100]));}
+    function severityText(s){return ({high:'高',medium:'中',low:'低',info:'提示'})[s]||'提示';}
+    function severityColor(s){return ({high:'var(--danger)',medium:'var(--warn)',low:'var(--primary)',info:'var(--muted)'})[s]||'var(--muted)';}
+    function severityBg(s){return ({high:'var(--danger-dim)',medium:'var(--warn-dim)',low:'var(--primary-dim)',info:'var(--surface2)'})[s]||'var(--surface2)';}
+
+    // ── 错误处理 ──
+    function errorIcon(t){return ({auth_error:'🔐',rate_limit:'⏳',model_not_found:'🔍',timeout:'⏱',network_error:'🌐',server_error:'💥',empty_response:'📭',bad_request:'⚠️',config_error:'⚙️',unknown:'❓'})[t]||'❌';}
+    function errorTitle(t){return ({auth_error:'API 认证失败',rate_limit:'请求频率超限',model_not_found:'模型不存在',timeout:'请求超时',network_error:'网络连接失败',server_error:'服务端错误',empty_response:'模型返回空内容',bad_request:'请求参数错误',config_error:'配置错误',unknown:'未知错误'})[t]||'生成失败';}
+
+    function insertTab(e){const el=e.target,s=el.selectionStart,v=el.value;el.value=v.substring(0,s)+'    '+v.substring(el.selectionEnd);el.selectionStart=el.selectionEnd=s+4;form.code=el.value;}
+    function loadEx(k){form.code=EXAMPLES[k];quickResult.value=null;rounds.value=[];finalStatus.value='';codeReview.value=[];astSummary.value='';errorInfo.value=null;sourceBugDiagnosis.value=null;}
+
+    // ── 完整示例库（来自 /api/examples） ──
+    const exampleLibrary = ref([]);
+    const selectedExampleId = ref('');
+    async function fetchExampleLibrary(){
+      try{const r=await axios.get(`${API}/examples`);if(r.data.code===0)exampleLibrary.value=r.data.data||[];}catch(e){}
+    }
+    function loadExampleFromLibrary(){
+      const id=selectedExampleId.value;
+      if(!id) return;
+      const ex=exampleLibrary.value.find(e=>e.id===id);
+      if(ex){
+        form.code=ex.code;
+        quickResult.value=null;rounds.value=[];finalStatus.value='';codeReview.value=[];astSummary.value='';errorInfo.value=null;sourceBugDiagnosis.value=null;
+        toast(`已加载示例：${ex.title}${ex.tips?'  · '+ex.tips:''}`,'success');
+      }
+      selectedExampleId.value='';
+    }
+
+    async function doAnalyze(){if(!form.code.trim())return;try{const r=await axios.post(`${API}/analyze`,{code:form.code});if(r.data.code===0){astSummary.value=r.data.data.summary;toast('解析完成','success');}else toast(r.data.msg,'error');}catch(e){toast('请求失败','error');}}
+
+    async function doQuick(){running.value=true;quickResult.value=null;errorInfo.value=null;
+      // 普通模式：后端一次性完成生成、执行、覆盖率采集并返回结果。
+      try{const r=await axios.post(`${API}/generate_and_run`,requestPayload(),{validateStatus:()=>true});
+        if(r.data.code===0){quickResult.value=r.data.data;toast(`完成，通过率 ${(r.data.data.run.pass_rate*100).toFixed(1)}%`,'success');}
+        else{const d=r.data.data||{};errorInfo.value={error_type:d.error_type||'unknown',message:r.data.msg,suggestion:d.suggestion||'',retryable:d.retryable||false};}
+      }catch(e){errorInfo.value={error_type:'network_error',message:'请求失败：'+e.message,suggestion:'请检查后端服务是否运行在 '+API,retryable:true};}
+      finally{running.value=false;}
+    }
+
+    async function doIterate(){running.value=true;rounds.value=[];finalStatus.value='';codeReview.value=[];errorInfo.value=null;sourceBugDiagnosis.value=null;currentRound.value=1;currentAction.value='准备中...';
+      // 迭代模式使用 fetch 读取 SSE 流，边生成边更新轮次进度。
+      try{const resp=await fetch(`${API}/iterate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(requestPayload({coverage_threshold:form.coverage_thresholds.branch/100,coverage_thresholds:coveragePayload()}))});
+        if(!resp.ok){errorInfo.value={error_type:'server_error',message:`请求失败 HTTP ${resp.status}`,suggestion:'请检查后端服务状态',retryable:true};running.value=false;return;}
+        const reader=resp.body.getReader(),dec=new TextDecoder();let buf='';
+        while(true){const {done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const parts=buf.split('\n\n');buf=parts.pop();for(const p of parts){if(!p.startsWith('data:'))continue;try{handleSSE(JSON.parse(p.slice(5).trim()));}catch(e){}}}
+      }catch(e){errorInfo.value={error_type:'network_error',message:'连接失败：'+e.message,suggestion:'请检查网络和后端服务',retryable:true};}
+      finally{running.value=false;currentAction.value='';}
+    }
+
+    function handleSSE(data){
+      // 后端每个 SSE type 对应一个前端状态更新分支。
+      if(data.type==='start'){currentRound.value=1;currentAction.value='正在生成...';}
+      else if(data.type==='generating'){currentRound.value=data.round;currentAction.value=`第${data.round}轮：调用 LLM 生成...`;}
+      else if(data.type==='executing'){currentAction.value=`第${data.round}轮：执行测试 + 采集覆盖率...`;}
+      else if(data.type==='round_result'){rounds.value.push({...data,_open:true,_codeOpen:false,_diagOpen:data.bug_diagnosis&&data.bug_diagnosis.verdict==='source_bug'});currentAction.value='';if(data.status==='error'&&data.error_type){errorInfo.value={error_type:data.error_type,message:data.failure_reason,suggestion:data.suggestion||'',retryable:data.retryable||false};}}
+      else if(data.type==='diagnosing'){currentAction.value=`第${data.round}轮：诊断失败根因（被测代码 vs 测试断言）...`;}
+      else if(data.type==='source_bug_detected'){sourceBugDiagnosis.value=data.diagnosis||null;currentAction.value='';}
+      else if(data.type==='done'){finalStatus.value=data.status;codeReview.value=data.code_review||[];if(data.status==='source_bug'&&data.diagnosis)sourceBugDiagnosis.value=data.diagnosis;currentAction.value='';if(data.status==='success')toast(`迭代成功！第${data.rounds}轮达标`,'success');else if(data.status==='source_bug')toast(`检出被测代码 bug，已阻断迭代`,'error');else toast('3轮迭代均未达标','error');}
+      else if(data.type==='error'){errorInfo.value={error_type:'unknown',message:data.message,suggestion:'',retryable:false};currentAction.value='';}
+    }
+
+    function doRun(){if(!form.code.trim()){toast('请先输入代码','error');return;}if(running.value)return;errorInfo.value=null;if(mode.value==='iter')doIterate();else doQuick();}
+
+    function copy(text){navigator.clipboard.writeText(text||'').then(()=>toast('已复制','success'));}
+    function downloadPy(content,filename){const blob=new Blob([content||''],{type:'text/x-python'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename||'test.py';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('已下载 '+filename,'success');}
+
+    async function loadHistory(){try{const r=await axios.get(`${API}/history`,{params:{page:histPage.value,page_size:20,model_id:histFilter.value}});if(r.data.code===0)histData.value=r.data.data;}catch(e){}}
+    async function loadIterHistory(){try{const r=await axios.get(`${API}/iter_history`);if(r.data.code===0)iterHistData.value=r.data.data;}catch(e){}}
+    async function viewHist(id,kind){try{const url=kind==='iter'?`${API}/iter_history/${id}`:`${API}/history/${id}`;const r=await axios.get(url);if(r.data.code===0)detailModal.value=r.data.data;}catch(e){}}
+    async function delHist(id,kind){if(!confirm('确定删除？'))return;try{const url=kind==='iter'?`${API}/iter_history/${id}`:`${API}/history/${id}`;await axios.delete(url);toast('已删除','success');kind==='iter'?loadIterHistory():loadHistory();}catch(e){}}
+    function switchHist(){tab.value='hist';loadHistory();loadIterHistory();}
+
+    async function switchStats(){tab.value='stats';try{const [r1,r2]=await Promise.all([axios.get(`${API}/stats`),axios.get(`${API}/iter_stats`)]);if(r1.data.code===0)statsData.value=r1.data.data;if(r2.data.code===0)iterStatsData.value=r2.data.data;await nextTick();renderCharts();}catch(e){}}
+
+    function renderCharts(){
+      // Chart.js 实例需要先销毁再重建，避免切换统计页时重复叠加。
+      function singleBar(id,chart,label,data,color,maxV=null){const ctx=document.getElementById(id);if(!ctx)return chart;if(chart)chart.destroy();return new Chart(ctx,{type:'bar',data:{labels:data.labels.map(s=>`${s.model_name}/${s.strategy||'iter'}`),datasets:[{label,data:data.values,backgroundColor:`${color}88`,borderColor:color,borderWidth:1,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:maxV||undefined,grid:{color:'#30363d'},ticks:{color:'#8b949e'}},x:{grid:{color:'#30363d'},ticks:{color:'#8b949e'}}},plugins:{legend:{display:false}}}});}
+      if(statsData.value.length){
+        chartPR=singleBar('chartPassRate',chartPR,'平均通过率(%)',{labels:statsData.value,values:statsData.value.map(s=>Number(s.avg_pass_rate||0))},'#58a6ff',100);
+        chartQS=singleBar('chartQuickSpeed',chartQS,'平均耗时(ms)',{labels:statsData.value,values:statsData.value.map(s=>Number(s.avg_latency_ms||0))},'#d29922');
+        chartQT=singleBar('chartQuickTokens',chartQT,'平均 Token',{labels:statsData.value,values:statsData.value.map(s=>Number(s.avg_tokens_used||0))},'#bc8cff');
+      }
+      if(iterStatsData.value.length){
+        const ctx2=document.getElementById('chartIterStats');
+        if(ctx2){if(chartIS)chartIS.destroy();const labels2=iterStatsData.value.map(s=>`${s.model_name}/${s.strategy||'iter'}`);
+          chartIS=new Chart(ctx2,{type:'bar',data:{labels:labels2,datasets:[
+            {label:'成功率(%)',data:iterStatsData.value.map(s=>s.success_rate),backgroundColor:'#3fb95088',borderColor:'#3fb950',borderWidth:1,borderRadius:5},
+            {label:'行覆盖率(%)',data:iterStatsData.value.map(s=>s.avg_line_coverage),backgroundColor:'#58a6ff88',borderColor:'#58a6ff',borderWidth:1,borderRadius:5},
+            {label:'分支覆盖率(%)',data:iterStatsData.value.map(s=>s.avg_branch_coverage),backgroundColor:'#bc8cff88',borderColor:'#bc8cff',borderWidth:1,borderRadius:5},
+            {label:'路径覆盖率(%)',data:iterStatsData.value.map(s=>s.avg_path_coverage),backgroundColor:'#d2992288',borderColor:'#d29922',borderWidth:1,borderRadius:5},
+            {label:'代码覆盖率(%)',data:iterStatsData.value.map(s=>s.avg_code_coverage),backgroundColor:'#f8514988',borderColor:'#f85149',borderWidth:1,borderRadius:5},
+          ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:100,grid:{color:'#30363d'},ticks:{color:'#8b949e'}},x:{grid:{color:'#30363d'},ticks:{color:'#8b949e'}}},plugins:{legend:{labels:{color:'#8b949e',boxWidth:12}}}}});
+        }
+        chartIterSpeed=singleBar('chartIterSpeed',chartIterSpeed,'平均总耗时(ms)',{labels:iterStatsData.value,values:iterStatsData.value.map(s=>Number(s.avg_latency_ms||0))},'#d29922');
+        chartIterTokens=singleBar('chartIterTokens',chartIterTokens,'平均总 Token',{labels:iterStatsData.value,values:iterStatsData.value.map(s=>Number(s.avg_tokens_used||0))},'#bc8cff');
+      }
+    }
+
+    function handleKeydown(e){if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();if(tab.value==='gen')doRun();}}
+
+    onMounted(async()=>{
+      // 启动时同步后端模型列表、示例库，并绑定快捷键。
+      try{const r=await axios.get(`${API}/models`);if(r.data.code===0)models.value=r.data.data;}catch(e){}
+      fetchExampleLibrary();
+      autosizeCodeEditor();
+      window.addEventListener('keydown',handleKeydown);
+    });
+    onUnmounted(()=>{window.removeEventListener('keydown',handleKeydown);});
+
+    return {
+      tab,mode,toasts,models,customModels,allModels,providerPresets,apiConfig,selectedCustomModel,
+      form,running,astSummary,errorInfo,coverageControls,
+      rounds,currentRound,currentAction,finalStatus,codeReview,quickResult,sourceBugDiagnosis,
+      histData,iterHistData,histPage,histFilter,detailModal,statsData,iterStatsData,
+      codeEditor,lineNums,lineCount,syncScroll,
+      insertTab,loadEx,doAnalyze,doRun,loadHistory,loadIterHistory,viewHist,delHist,
+      exampleLibrary,selectedExampleId,loadExampleFromLibrary,
+      switchHist,switchStats,copy,downloadPy,
+      applyProviderPreset,syncSelectedModel,saveCustomModel,deleteCustomModel,clearApiConfig,
+      pct,coverageApplicable,coverageText,coverageWidth,coverageColor,coverageCount,coverageSummary,
+      severityText,severityColor,severityBg,errorIcon,errorTitle,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

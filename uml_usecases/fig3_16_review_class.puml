@@ -1,0 +1,29 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam arrowColor Black
+hide circle
+
+class CodeReviewer {
+  + analyze(code, result): List<Issue>
+}
+class ReviewRule {
+  + name: str
+  + check(code): Issue
+}
+class Issue {
+  + level: str
+  + message: str
+  + line: int
+}
+CodeReviewer --> ReviewRule
+ReviewRule --> Issue
+@enduml

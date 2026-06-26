@@ -1,0 +1,38 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 20
+skinparam actorFontSize 20
+skinparam usecaseFontSize 20
+skinparam packageFontSize 20
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor White
+  BorderColor Black
+}
+skinparam actor {
+  BackgroundColor White
+  BorderColor Black
+}
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor Black
+}
+
+left to right direction
+actor "用户" as USER
+rectangle "测试执行" {
+  usecase "运行 pytest" as UC1
+  usecase "采集覆盖率" as UC2
+  usecase "查看通过率" as UC3
+  usecase "查看失败详情" as UC4
+}
+USER -- UC1
+USER -- UC2
+USER -- UC3
+USER -- UC4
+@enduml

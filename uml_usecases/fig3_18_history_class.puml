@@ -1,0 +1,33 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam arrowColor Black
+hide circle
+
+class HistoryService {
+  + list_records(page): List
+  + get_record(id): Record
+  + delete_record(id): bool
+}
+class StatsService {
+  + compare_by_model(): dict
+  + compare_by_strategy(): dict
+}
+class Record {
+  + id: int
+  + model_name: str
+  + strategy: str
+  + pass_rate: float
+  + line_coverage: float
+}
+HistoryService --> Record
+StatsService --> Record
+@enduml

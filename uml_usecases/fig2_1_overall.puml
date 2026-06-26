@@ -1,0 +1,40 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 20
+skinparam actorFontSize 20
+skinparam usecaseFontSize 20
+skinparam packageFontSize 20
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor White
+  BorderColor Black
+}
+skinparam actor {
+  BackgroundColor White
+  BorderColor Black
+}
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor Black
+}
+
+left to right direction
+actor "用户" as USER
+rectangle "测试用例生成系统" {
+  usecase "代码分析" as M1
+  usecase "生成测试" as M2
+  usecase "执行测试" as M3
+  usecase "迭代优化" as M4
+  usecase "历史记录" as M5
+}
+USER -- M1
+USER -- M2
+USER -- M3
+USER -- M4
+USER -- M5
+@enduml

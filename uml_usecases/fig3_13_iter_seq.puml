@@ -1,0 +1,37 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+hide footbox
+skinparam lifelineStyle solid
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam actorFontSize 18
+skinparam participantFontSize 18
+skinparam databaseFontSize 18
+skinparam sequenceMessageAlign center
+
+actor "User" as USER
+participant ":F̲r̲o̲n̲t̲e̲n̲d̲" as FE
+participant ":I̲t̲e̲r̲R̲u̲n̲n̲e̲r̲" as ITER
+participant ":L̲L̲M̲C̲l̲i̲e̲n̲t̲" as LLM
+participant ":R̲u̲n̲n̲e̲r̲" as RUN
+
+USER -> FE: 启动迭代
+FE -> ITER: 建立 SSE 连接
+activate ITER
+loop 最多 3 轮
+  ITER -> LLM: 调用生成
+  activate LLM
+  LLM --> ITER: 返回测试代码
+  deactivate LLM
+  ITER -> RUN: 执行测试
+  activate RUN
+  RUN --> ITER: 返回覆盖率
+  deactivate RUN
+  ITER --> FE: 推送本轮结果
+end
+ITER --> FE: 推送 done 事件
+deactivate ITER
+FE --> USER: 显示最终结果
+@enduml

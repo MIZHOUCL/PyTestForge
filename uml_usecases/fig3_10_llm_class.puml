@@ -1,0 +1,36 @@
+@startuml
+
+skinparam backgroundColor #FFFFFF
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName "PingFang SC"
+skinparam defaultFontSize 18
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam arrowColor Black
+hide circle
+
+class LLMClient {
+  - clients: dict
+  + generate(model_id, prompt): Result
+}
+class ModelConfig {
+  + name: str
+  + api_key: str
+  + base_url: str
+  + model: str
+  + temperature: float
+  + max_tokens: int
+}
+class GenerateResult {
+  + success: bool
+  + code: str
+  + tokens_used: int
+  + latency_ms: int
+  + truncated: bool
+}
+LLMClient --> ModelConfig
+LLMClient --> GenerateResult
+@enduml
